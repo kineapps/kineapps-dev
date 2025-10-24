@@ -65,6 +65,38 @@ This file provides global guidance to Claude Code across all KineApps projects.
   string path = customFilePath ?? ApplicationData.Current.LocalFolder.Path;
   ```
 - **Make internal classes testable** - Use `<InternalsVisibleTo Include="MyProject.Tests" />` in .csproj
+- **Design classes for mockability (C#/.NET with Moq)**:
+  - Make methods `virtual` if they need to be mocked
+  - Make constructors `protected` (not `private`) to allow Moq proxy creation
+  - Example:
+    ```csharp
+    public class AccountManager
+    {
+        protected AccountManager() { } // Protected allows Moq to create proxy
+
+        public virtual async Task<CalendarAccount> GetAccountAsync(string accountId) // Virtual allows mocking
+        {
+            // Implementation
+        }
+    }
+    ```
+- **Use factory pattern for singletons with DI**:
+  ```csharp
+  public class AccountOperations
+  {
+      private readonly Func<Task<AccountManager>> accountManagerFactory;
+
+      // Production: uses singleton
+      public AccountOperations()
+          : this(() => AccountManager.Instance) { }
+
+      // Testing: inject mock factory
+      internal AccountOperations(Func<Task<AccountManager>> factory)
+      {
+          accountManagerFactory = factory;
+      }
+  }
+  ```
 
 ### Performance
 - Consider performance implications of changes
