@@ -37,8 +37,9 @@ This file provides global guidance to Claude Code across all KineApps projects.
 ## Code Quality
 
 ### Testing
-- Write tests for new functionality
-- Target 100% test coverage
+- **Write tests as you develop, not after** - Use TDD approach: write failing test first, then implement
+- **Run tests immediately** - Don't just verify compilation; actually execute tests to catch runtime issues
+- Target 100% test coverage for critical business logic
 - Run existing tests before committing
 - Follow existing test patterns in the project
 
@@ -47,6 +48,23 @@ This file provides global guidance to Claude Code across all KineApps projects.
 - Prefer prefixing test name with the method being tested (e.g., `test('.foo - should add a new item')`)
 - Group tests clearly and use clear names for groups/tests
 - DO NOT refer to current context or task with "BUG REPRODUCTION", "bug fix test" or similar in unit test names/descriptions, but use clear names telling what is tested
+
+#### Design for Testability
+- **Avoid static dependencies** - Don't hardcode dependencies on file system, databases, platform APIs (like `ApplicationData.Current` in WinUI)
+- **Use dependency injection** - Accept dependencies via constructor parameters or properties
+- **Provide test constructors** - Add `internal Constructor(dependencies)` for test-specific initialization
+- **Pattern for platform dependencies**:
+  ```csharp
+  // Production: parameterless constructor uses platform API
+  private MyClass() { } // Uses ApplicationData.Current internally
+
+  // Testing: internal constructor accepts test dependencies
+  internal MyClass(string filePath) { customFilePath = filePath; }
+
+  // Implementation uses custom dependency if provided, otherwise platform API
+  string path = customFilePath ?? ApplicationData.Current.LocalFolder.Path;
+  ```
+- **Make internal classes testable** - Use `<InternalsVisibleTo Include="MyProject.Tests" />` in .csproj
 
 ### Performance
 - Consider performance implications of changes
@@ -102,10 +120,21 @@ This file provides global guidance to Claude Code across all KineApps projects.
 - Use XML documentation comments (`///`) for all public types and members
 - Prefer `var` for local variables when type is obvious
 - Use async/await properly; avoid `.Result` or `.Wait()` which can cause deadlocks
+- **Thread-safety in async code**: Use `AsyncLock` from Nito.AsyncEx instead of `lock` keyword when protecting async operations
+  - `lock` cannot be used with `await` - will cause compiler error CS1996
+  - Use `using (await asyncLock.LockAsync().ConfigureAwait(false)) { ... }` pattern
+  - Example: `private readonly AsyncLock myLock = new AsyncLock();`
 - Implement IDisposable correctly for resource management
 - Use dependency injection following project patterns
 - Never use `Console.WriteLine` or `Debug.WriteLine` for production logging
 - Run tests before committing changes
+
+#### WinUI/UWP Specific Testing
+- **Platform APIs are NOT available in tests** - `ApplicationData.Current`, `CoreWindow.Current`, etc. don't work in MSTest even with WinUI test projects
+- **Design for testability from the start** - Any class using platform APIs needs internal constructor for testing
+- **Use MSTest for WinUI-dependent tests** - Test projects need WinUI app infrastructure (UnitTestApp.xaml, manifest, etc.)
+- **Use xUnit for utility classes** - Faster, simpler for non-WinUI code
+- **Pattern**: Provide internal constructor that accepts file paths, connections, or other testable dependencies instead of platform APIs
 
 ### TypeScript Projects
 
