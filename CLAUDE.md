@@ -206,65 +206,11 @@ When working with GitHub issues, use the following priority tags for hierarchica
 
 When creating or updating issues, apply appropriate priority tags based on urgency and impact.
 
-### GitHub CLI (`gh`) Usage
+### GitHub Integration
 
-#### Viewing Pull Request Review Comments
+**CRITICAL: Always prefer GitHub MCP tools over `gh` CLI commands** for all GitHub operations (PRs, issues, commits, files, searching, etc.). The MCP provides structured, reliable access to GitHub APIs.
 
-**CRITICAL: When asked to check review comments after a commit, you MUST use the method below to see ALL comments reliably.**
-
-##### The ONLY Reliable Method to View ALL PR Comments
-
-Use `gh pr view --comments` which shows ALL comments (inline code reviews, general comments, from all reviewers):
-
-```bash
-# View ALL PR comments including latest reviews
-gh pr view {pr_number} --comments
-
-# To see just recent comments, use tail
-gh pr view {pr_number} --comments | tail -200
-
-# To see comments from a specific reviewer
-gh pr view {pr_number} --comments | grep -A 100 "author:.*claude"
-gh pr view {pr_number} --comments | grep -A 100 "author:.*copilot"
-```
-
-**Why this is the ONLY reliable method:**
-- `gh api` endpoints with timestamps often miss comments due to timezone/caching issues
-- `gh pr view --json comments` doesn't show inline code review comments
-- `gh api /repos/.../pulls/{pr}/comments` only shows inline comments, not general comments
-- `gh pr view --comments` shows EVERYTHING in human-readable format
-
-##### Getting Inline Review Comments (Alternative Method)
-
-If you specifically need just inline code review comments in JSON format:
-
-```bash
-# Get ALL inline review comments (from all commits)
-gh api /repos/{owner}/{repo}/pulls/{pr}/comments
-
-# The output is JSON with each comment containing:
-# - path: file path
-# - line/position: line number
-# - body: comment text with suggestions
-# - diff_hunk: code context
-# - commit_id: which commit the comment is on
-```
-
-**Important**: This API endpoint shows ALL inline comments regardless of commit, so you'll always see them even if they're on an older commit.
-
-##### Other Useful GitHub CLI Commands
-
-```bash
-# View PR details
-gh pr view {pr_number}
-
-# View PR in browser
-gh pr view {pr_number} --web
-
-# Check PR status and reviews
-gh pr view {pr_number} --json state,reviewDecision,reviews
-
-# List all PR comments (general comments, not inline code reviews)
-gh pr view {pr_number} --comments
-```
+Only use `gh` CLI when:
+- Opening PR in browser: `gh pr view {pr_number} --web`
+- The MCP doesn't support the specific operation needed
 
