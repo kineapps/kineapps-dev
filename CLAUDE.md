@@ -194,6 +194,39 @@ This file provides global guidance to Claude Code across all KineApps projects.
 - When asked to fix review comments in a PR, ignore comments marked as RESOLVED
 - When merging PR, delete the branch (local and remote)
 
+#### Handling Review Comments
+When fixing automated code review comments (from Copilot, Claude bot, etc.):
+
+1. **Mark fixed comments as resolved**: After fixing an issue, mark the corresponding review thread as "Resolved" in GitHub so the user can track progress
+2. **Add replies directly to each unresolved comment thread**: For issues that cannot be fixed or are deferred, add a reply directly below each specific review comment explaining why
+   - **IMPORTANT**: Reply to each individual comment thread, NOT as a general PR comment
+   - Example replies: "This is by design because..." or "Deferred to issue #123"
+   - DO NOT mark these as resolved - leave them open for visibility
+   - This keeps context with the specific code and makes it easy to see which issues have been addressed
+
+**Using GitHub MCP to resolve review threads**:
+```
+# Get review comments and thread IDs
+mcp__github__pull_request_read(
+  method: "get_review_comments",
+  owner: "...",
+  repo: "...",
+  pullNumber: ...
+)
+
+# Resolve a specific thread using GraphQL
+# Note: Use the pullRequestReviewThreadId from the comment, not the comment ID
+gh api graphql -f query='
+  mutation {
+    resolveReviewThread(input: {threadId: "PRRT_..."}) {
+      thread {
+        isResolved
+      }
+    }
+  }
+'
+```
+
 ### GitHub Issues and Priority Tags
 When working with GitHub issues, use the following priority tags for hierarchical prioritization (lower number = higher priority):
 
